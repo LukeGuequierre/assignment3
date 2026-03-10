@@ -86,6 +86,20 @@ class Admin(Base):
             fields[c.name] = getattr(self, c.name)
         return fields
 
+class User(Base):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String)
+    password = Column(String)
+
+    def __repr__(self):
+        return "<User(name='%s')>" % (self.name)       
+    def as_dict(self):
+        fields = {}
+        for c in self.__table__.columns:
+            fields[c.name] = getattr(self, c.name)
+        return fields
+
 
 
 ## Admin REST API
