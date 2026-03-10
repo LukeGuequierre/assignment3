@@ -168,6 +168,69 @@ def delete_admin_by_id(id):
         status = ("Admin with id {id} deleted.\n").format(id=id)
         return Response(status, status=200)
 
+## User REST API
+@app.route("/users", methods=['POST'])
+def add_users():
+    app.logger.info("Inside add_users")
+    data = request.json
+    app.logger.info("Received request:%s", str(data))
+
+    name = data['name']
+    password = data['password']
+
+    users = User(name=name, password=password)
+
+    session = DBSession()
+    session.add(users)
+    session.commit()
+
+    return users.as_dict()
+
+@app.route("/users")
+def get_users():
+    app.logger.info("Inside get_users")
+    ret_obj = {}
+
+    session = DBSession()
+    users = session.query(User)
+    user_list = []
+    for user in users:
+        user_list.append(user.as_dict())
+
+    ret_obj['users'] = user_list
+    return ret_obj
+
+@app.route("/users/<id>")
+def get_user_by_id(id):
+    app.logger.info("Inside get_users_by_id %s\n", id)
+
+    session = DBSession()
+    user = session.get(User, id)
+
+    app.logger.info("Found user:%s\n", str(users))
+    if user == None:
+        status = ("User with id {id} not found\n").format(id=id)
+        return Response(status, status=404)
+    else:
+        return user.as_dict()
+
+@app.route("/users/<id>", methods=['DELETE'])
+def delete_user_by_id(id):
+    app.logger.info("Inside delete_users_by_id %s\n", id)
+
+    session = DBSession()
+    user = session.query(User).filter_by(id=id).first()
+
+    app.logger.info("Found user:%s\n", str(user))
+    if user == None:
+        status = ("User with id {id} not found.\n").format(id=id)
+        return Response(status, status=404)
+    else:
+        session.delete(user)
+        session.commit()
+        status = ("User with {id} deleted.\n").format(id=id)
+        return Response(status, status=200)
+
 
 @app.route("/logout",methods=['GET'])
 def logout():
