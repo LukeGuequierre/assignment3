@@ -88,7 +88,7 @@ class Admin(Base):
 
 class User(Base):
     __tablename__ = 'users'
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String)
     password = Column(String)
 
@@ -102,7 +102,7 @@ class User(Base):
         
 class City(Base):
     __tablename__ = 'cities'
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    city_id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String)
     url = Column(String)
 
@@ -213,39 +213,40 @@ def get_users():
     ret_obj['users'] = user_list
     return ret_obj
 
-@app.route("/users/<id>")
-def get_user_by_id(id):
-    app.logger.info("Inside get_users_by_id %s\n", id)
+@app.route("/users/<user_id>")
+def get_user_by_id(user_id):
+    app.logger.info("Inside get_users_by_id %s\n", user_id)
 
     us_session = DBSession()
-    user = us_session.get(User, id)
+    user = us_session.get(User, user_id)
 
     app.logger.info("Found user:%s\n", str(user))
     if user == None:
-        status = ("User with id {id} not found\n").format(id=id)
+        status = ("User with id {user_id} not found\n").format(user_id=user_id)
         return Response(status, status=404)
     else:
         return user.as_dict()
 
-@app.route("/users/<id>", methods=['DELETE'])
-def delete_user_by_id(id):
-    app.logger.info("Inside delete_users_by_id %s\n", id)
+@app.route("/users/<user_id>", methods=['DELETE'])
+def delete_user_by_id(user_id):
+    app.logger.info("Inside delete_users_by_id %s\n", user_id)
 
     us_session = DBSession()
-    user = us_session.query(User).filter_by(id=id).first()
+    user = us_session.query(User).filter_by(user_id=user_id).first()
 
     app.logger.info("Found user:%s\n", str(user))
     if user == None:
-        status = ("User with id {id} not found.\n").format(id=id)
+        status = ("User with id {user_id} not found.\n").format(user_id=user_id)
         return Response(status, status=404)
     else:
         us_session.delete(user)
         us_session.commit()
-        status = ("User with {id} deleted.\n").format(id=id)
+        status = ("User with {user_id} deleted.\n").format(user_id=user_id)
         return Response(status, status=200)
+
 ## Cities route
 @app.route("/admin/<id>/cities", methods=['POST'])
-def add_city():
+def add_city_admin():
     app.logger.info("Inside add_city")
     data = request.json
     app.logger.info("Received request:%s", str(data))
@@ -261,6 +262,51 @@ def add_city():
 
     return city.as_dict()
 
+@app.route("/admin/<id>/cities")
+def get_cities_admin():
+    app.logger.info("Inside get_cities_admin")
+    ret_obj = {}
+
+    cs_session = DBSession()
+    cities = cs_session.query(City)
+    city_list = []
+    for city in cities:
+        city_list.append(city.as_dict())
+
+    ret_obj['cities'] = city_list
+    return ret_obj
+    
+@app.route("/admin/<id>/cities/<city_id>")
+def get_city_by_id_admin(city_id):
+    app.logger.info("Inside get_city_by_id_admin %s\n", city_id)
+
+    cs_session = DBSession()
+    city = cs_session.get(City, city_id)
+
+    app.logger.info("Found city:%s\n", str(city))
+    if city == None:
+        status = ("City with id {city_id} not found\n").format(city_id=city_id)
+        return Response(status, status=404)
+    else:
+        return city.as_dict()
+
+@app.route("/admin/<id>/cities/<city_id>", methods=['DELETE'])
+def delete_city_by_id(city_id):
+    app.logger.info("Inside delete_city_by_id %s\n", city_id)
+
+    cs_session = DBSession()
+    city = cs_session.query(City).filter_by(city_id=city_id).first()
+
+    app.logger.info("Found user:%s\n", str(city))
+    if city == None:
+        status = ("City with id {city_id} not found.\n").format(city_id=city_id)
+        return Response(status, status=404)
+    else:
+        cs_session.delete(city)
+        cs_session.commit()
+        status = ("City with {city_id} deleted.\n").format(city_id=city_id)
+        return Response(status, status=200)
+        
 @app.route("/logout",methods=['GET'])
 def logout():
     app.logger.info("Logout called.")
