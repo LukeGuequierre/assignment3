@@ -99,7 +99,20 @@ class User(Base):
         for c in self.__table__.columns:
             fields[c.name] = getattr(self, c.name)
         return fields
+        
+class City(Base):
+    __tablename__ = 'cities'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String)
+    url = Column(String)
 
+    def __repr__(self):
+        return "<User(name='%s')>" % (self.name)       
+    def as_dict(self):
+        fields = {}
+        for c in self.__table__.columns:
+            fields[c.name] = getattr(self, c.name)
+        return fields
 
 
 ## Admin REST API
@@ -230,7 +243,23 @@ def delete_user_by_id(id):
         us_session.commit()
         status = ("User with {id} deleted.\n").format(id=id)
         return Response(status, status=200)
+## Cities route
+@app.route("/admin/<id>/cities", methods=['POST'])
+def add_city():
+    app.logger.info("Inside add_city")
+    data = request.json
+    app.logger.info("Received request:%s", str(data))
 
+    name = data['name']
+    url = data['url']
+
+    city = City(name=name, url=url)
+
+    cs_session = DBSession()
+    cs_session.add(city)
+    cs_session.commit()
+
+    return city.as_dict()
 
 @app.route("/logout",methods=['GET'])
 def logout():
