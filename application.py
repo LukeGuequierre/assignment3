@@ -114,9 +114,9 @@ def add_admin():
 
     admin = Admin(name=name, password=password)
 
-    session = DBSession()
-    session.add(admin)
-    session.commit()
+    am_session = DBSession()
+    am_session.add(admin)
+    am_session.commit()
 
     return admin.as_dict()
 
@@ -126,8 +126,8 @@ def get_admins():
     app.logger.info("Inside get_admins")
     ret_obj = {}
 
-    session = DBSession()
-    admins = session.query(Admin)
+    am_session = DBSession()
+    admins = am_session.query(Admin)
     admin_list = []
     for admin in admins:
         admin_list.append(admin.as_dict())
@@ -140,8 +140,8 @@ def get_admins():
 def get_admin_by_id(id):
     app.logger.info("Inside get_admin_by_id %s\n", id)
 
-    session = DBSession()
-    admin = session.get(Admin, id)
+    am_session = DBSession()
+    admin = am_session.get(Admin, id)
 
     app.logger.info("Found admin:%s\n", str(admin))
     if admin == None:
@@ -155,16 +155,16 @@ def get_admin_by_id(id):
 def delete_admin_by_id(id):
     app.logger.info("Inside delete_admin_by_id %s\n", id)
 
-    session = DBSession()
-    admin = session.query(Admin).filter_by(id=id).first()
+    am_session = DBSession()
+    admin = am_session.query(Admin).filter_by(id=id).first()
 
     app.logger.info("Found admin:%s\n", str(admin))
     if admin == None:
         status = ("Admin with id {id} not found.\n").format(id=id)
         return Response(status, status=404)
     else:
-        session.delete(admin)
-        session.commit()
+        am_session.delete(admin)
+        am_session.commit()
         status = ("Admin with id {id} deleted.\n").format(id=id)
         return Response(status, status=200)
 
@@ -180,9 +180,9 @@ def add_users():
 
     users = User(name=name, password=password)
 
-    session = DBSession()
-    session.add(users)
-    session.commit()
+    us_session = DBSession()
+    us_session.add(users)
+    us_session.commit()
 
     return users.as_dict()
 
@@ -191,8 +191,8 @@ def get_users():
     app.logger.info("Inside get_users")
     ret_obj = {}
 
-    session = DBSession()
-    users = session.query(User)
+    us_session = DBSession()
+    users = us_session.query(User)
     user_list = []
     for user in users:
         user_list.append(user.as_dict())
@@ -204,10 +204,10 @@ def get_users():
 def get_user_by_id(id):
     app.logger.info("Inside get_users_by_id %s\n", id)
 
-    session = DBSession()
-    user = session.get(User, id)
+    us_session = DBSession()
+    user = us_session.get(User, id)
 
-    app.logger.info("Found user:%s\n", str(users))
+    app.logger.info("Found user:%s\n", str(user))
     if user == None:
         status = ("User with id {id} not found\n").format(id=id)
         return Response(status, status=404)
@@ -218,16 +218,16 @@ def get_user_by_id(id):
 def delete_user_by_id(id):
     app.logger.info("Inside delete_users_by_id %s\n", id)
 
-    session = DBSession()
-    user = session.query(User).filter_by(id=id).first()
+    us_session = DBSession()
+    user = us_session.query(User).filter_by(id=id).first()
 
     app.logger.info("Found user:%s\n", str(user))
     if user == None:
         status = ("User with id {id} not found.\n").format(id=id)
         return Response(status, status=404)
     else:
-        session.delete(user)
-        session.commit()
+        us_session.delete(user)
+        us_session.commit()
         status = ("User with {id} deleted.\n").format(id=id)
         return Response(status, status=200)
 
