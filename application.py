@@ -103,6 +103,7 @@ class User(Base):
 class City(Base):
     __tablename__ = 'cities'
     city_id = Column(Integer, primary_key=True, autoincrement=True)
+    creator_id = Column(Integer)
     name = Column(String)
     url = Column(String)
 
@@ -192,12 +193,15 @@ def add_users():
     password = data['password']
 
     users = User(name=name, password=password)
-
+    
     us_session = DBSession()
+    current_users = us_session.query(User).filter_by(name=name).first()
+    if current_users:
+        return Response("User with {} already exists.".format(name), status=400)
     us_session.add(users)
     us_session.commit()
 
-    return users.as_dict()
+    return Response(users.as_dict(), status=200)
 
 @app.route("/users")
 def get_users():
@@ -241,22 +245,25 @@ def delete_user_by_id(user_id):
     else:
         us_session.delete(user)
         us_session.commit()
-        status = ("User with {user_id} deleted.\n").format(user_id=user_id)
+        status = ("User with id {user_id} deleted.\n").format(user_id=user_id)
         return Response(status, status=200)
 
 ## Cities route
 @app.route("/admin/<id>/cities", methods=['POST'])
-def add_city_admin():
+def add_city_admin(id):
     app.logger.info("Inside add_city")
     data = request.json
     app.logger.info("Received request:%s", str(data))
 
     name = data['name']
     url = data['url']
-
-    city = City(name=name, url=url)
+    
+    city = City(creator_id=id, name=name, url=url)
 
     cs_session = DBSession()
+    admin = cs_session.get(Admin, id)
+    if admin is None:
+        return Response("Admin with id {} not found".format(id), status=404)
     cs_session.add(city)
     cs_session.commit()
 
@@ -308,17 +315,20 @@ def delete_city_by_id(city_id):
         return Response(status, status=200)
 
 @app.route("/users/<user_id>/cities", methods=['POST'])
-def add_city_user():
+def add_city_user(user_id):
     app.logger.info("Inside add_city_user")
     data = request.json
     app.logger.info("Received request:%s", str(data))
 
     name = data['name']
     url = data['url']
-
-    city = City(name=name, url=url)
+    
+    city = City(creator_id=user_id, name=name, url=url)
 
     cs_session = DBSession()
+    user = cs_session.get(User, user_id)
+    if user is None:
+        return Response("User with id {user_id} not found".format(id), status=404)
     cs_session.add(city)
     cs_session.commit()
 
