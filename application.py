@@ -100,10 +100,10 @@ class User(Base):
             fields[c.name] = getattr(self, c.name)
         return fields
         
-class City(Base):
+class AdminCity(Base):
     __tablename__ = 'cities'
     city_id = Column(Integer, primary_key=True, autoincrement=True)
-    creator_id = Column(Integer)
+    admin_id = Column(Integer)
     name = Column(String)
     url = Column(String)
 
@@ -115,6 +115,22 @@ class City(Base):
             fields[c.name] = getattr(self, c.name)
         return fields
 
+class UserCity(Base):
+    __tablename__ = 'cities'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    cityId = Column(Integer)
+    userId = Column(Integer)
+    month = Column(String)
+    year = Column(String)
+    weather_params = Column(List)
+
+    def __repr__(self):
+        return "<User(name='%s')>" % (self.name)       
+    def as_dict(self):
+        fields = {}
+        for c in self.__table__.columns:
+            fields[c.name] = getattr(self, c.name)
+        return fields
 
 ## Admin REST API
 @app.route("/admin", methods=['POST'])
