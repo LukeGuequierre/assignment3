@@ -306,6 +306,51 @@ def delete_city_by_id(city_id):
         cs_session.commit()
         status = ("City with {city_id} deleted.\n").format(city_id=city_id)
         return Response(status, status=200)
+
+@app.route("/users/<user_id>/cities", methods=['POST'])
+def add_city_user():
+    app.logger.info("Inside add_city_user")
+    data = request.json
+    app.logger.info("Received request:%s", str(data))
+
+    name = data['name']
+    url = data['url']
+
+    city = City(name=name, url=url)
+
+    cs_session = DBSession()
+    cs_session.add(city)
+    cs_session.commit()
+
+    return city.as_dict()
+
+@app.route("/users/<user_id>/cities")
+def get_cities_user():
+    app.logger.info("Inside get_cities_user")
+    ret_obj = {}
+
+    cs_session = DBSession()
+    cities = cs_session.query(City)
+    city_list = []
+    for city in cities:
+        city_list.append(city.as_dict())
+
+    ret_obj['cities'] = city_list
+    return ret_obj
+    
+@app.route("/users/<user_id>/cities/<city_id>")
+def get_city_by_id_user(city_id):
+    app.logger.info("Inside get_city_by_id_user %s\n", city_id)
+
+    cs_session = DBSession()
+    city = cs_session.get(City, city_id)
+
+    app.logger.info("Found city:%s\n", str(city))
+    if city == None:
+        status = ("City with id {city_id} not found\n").format(city_id=city_id)
+        return Response(status, status=404)
+    else:
+        return city.as_dict()
         
 @app.route("/logout",methods=['GET'])
 def logout():
