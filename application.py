@@ -305,10 +305,15 @@ def get_city_by_id_admin(id):
 
     cs_session = DBSession()
     city = cs_session.get(AdminCity, id)
+    admin = cs_session.get(Admin, adminId)
 
     app.logger.info("Found city:%s\n", str(city))
     if city == None:
         status = ("City with id {id} not found\n").format(id=id)
+        return Response(status, status=404)
+    app.logger.info("Found admin:%s\n", str(admin))
+    if admin == None:
+        status = ("Admin with id {id} not found.\n").format(id=adminId)
         return Response(status, status=404)
     else:
         return city.as_dict()
