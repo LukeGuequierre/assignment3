@@ -88,7 +88,7 @@ class Admin(Base):
 
 class User(Base):
     __tablename__ = 'users'
-    user_id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String)
     password = Column(String)
 
@@ -102,7 +102,7 @@ class User(Base):
         
 class AdminCity(Base):
     __tablename__ = 'cities'
-    city_id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     admin_id = Column(Integer)
     name = Column(String)
     url = Column(String)
@@ -233,35 +233,35 @@ def get_users():
     ret_obj['users'] = user_list
     return ret_obj
 
-@app.route("/users/<user_id>")
-def get_user_by_id(user_id):
-    app.logger.info("Inside get_users_by_id %s\n", user_id)
+@app.route("/users/<id>")
+def get_user_by_id(id):
+    app.logger.info("Inside get_users_by_id %s\n", id)
 
     us_session = DBSession()
-    user = us_session.get(User, user_id)
+    user = us_session.get(User, id)
 
     app.logger.info("Found user:%s\n", str(user))
     if user == None:
-        status = ("User with id {user_id} not found\n").format(user_id=user_id)
+        status = ("User with id {id} not found\n").format(id=id)
         return Response(status, status=404)
     else:
         return user.as_dict()
 
-@app.route("/users/<user_id>", methods=['DELETE'])
-def delete_user_by_id(user_id):
-    app.logger.info("Inside delete_users_by_id %s\n", user_id)
+@app.route("/users/<id>", methods=['DELETE'])
+def delete_user_by_id(id):
+    app.logger.info("Inside delete_users_by_id %s\n", id)
 
     us_session = DBSession()
-    user = us_session.query(User).filter_by(user_id=user_id).first()
+    user = us_session.query(User).filter_by(id=id).first()
 
     app.logger.info("Found user:%s\n", str(user))
     if user == None:
-        status = ("User with id {user_id} not found.\n").format(user_id=user_id)
+        status = ("User with id {id} not found.\n").format(id=id)
         return Response(status, status=404)
     else:
         us_session.delete(user)
         us_session.commit()
-        status = ("User with id {user_id} deleted.\n").format(user_id=user_id)
+        status = ("User with id {id} deleted.\n").format(id=id)
         return Response(status, status=200)
 
 ## Cities route
@@ -274,24 +274,24 @@ def add_city_admin(id):
     name = data['name']
     url = data['url']
     
-    city = City(creator_id=id, name=name, url=url)
+    city = AdminCity(adminId=id, name=name, url=url)
 
     cs_session = DBSession()
     admin = cs_session.get(Admin, id)
     if admin is None:
-        return Response("Admin with id {} not found".format(id), status=404)
+        return Response("Admin with id {id} not found".format(id), status=404)
     cs_session.add(city)
     cs_session.commit()
 
     return city.as_dict()
 
 @app.route("/admin/<id>/cities")
-def get_cities_admin():
+def get_cities_admin(id):
     app.logger.info("Inside get_cities_admin")
     ret_obj = {}
 
     cs_session = DBSession()
-    cities = cs_session.query(City)
+    cities = cs_session.query(AdminCity).filter_by(adminId=id)
     city_list = []
     for city in cities:
         city_list.append(city.as_dict())
@@ -299,47 +299,47 @@ def get_cities_admin():
     ret_obj['cities'] = city_list
     return ret_obj
     
-@app.route("/admin/<id>/cities/<city_id>")
-def get_city_by_id_admin(city_id):
-    app.logger.info("Inside get_city_by_id_admin %s\n", city_id)
+@app.route("/admin/<id>/cities/<id>")
+def get_city_by_id_admin(id):
+    app.logger.info("Inside get_city_by_id_admin %s\n", id)
 
     cs_session = DBSession()
-    city = cs_session.get(City, city_id)
+    city = cs_session.get(AdminCity, id)
 
     app.logger.info("Found city:%s\n", str(city))
     if city == None:
-        status = ("City with id {city_id} not found\n").format(city_id=city_id)
+        status = ("City with id {id} not found\n").format(id=id)
         return Response(status, status=404)
     else:
         return city.as_dict()
 
-@app.route("/admin/<id>/cities/<city_id>", methods=['DELETE'])
-def delete_city_by_id(city_id):
-    app.logger.info("Inside delete_city_by_id %s\n", city_id)
+@app.route("/admin/<id>/cities/<id>", methods=['DELETE'])
+def delete_city_by_id(id):
+    app.logger.info("Inside delete_city_by_id %s\n", id)
 
     cs_session = DBSession()
-    city = cs_session.query(City).filter_by(city_id=city_id).first()
+    city = cs_session.query(AdminCity).filter_by(id=id).first()
 
     app.logger.info("Found user:%s\n", str(city))
     if city == None:
-        status = ("City with id {city_id} not found.\n").format(city_id=city_id)
+        status = ("City with id {id} not found.\n").format(id=id)
         return Response(status, status=404)
     else:
         cs_session.delete(city)
         cs_session.commit()
-        status = ("City with {city_id} deleted.\n").format(city_id=city_id)
+        status = ("City with {id} deleted.\n").format(id=id)
         return Response(status, status=200)
 
-@app.route("/users/<user_id>/cities", methods=['POST'])
-def add_city_user(user_id):
+@app.route("/users/<id>/cities", methods=['POST'])
+def add_city_user(id):
     app.logger.info("Inside add_city_user")
     data = request.json
     app.logger.info("Received request:%s", str(data))
 
-    name = data['name']
-    url = data['url']
+    month = data['month']
+    year = data['year']
     
-    city = City(creator_id=user_id, name=name, url=url)
+    city = UserCity(creator_id=user_id, name=name, url=url)
 
     cs_session = DBSession()
     user = cs_session.get(User, user_id)
