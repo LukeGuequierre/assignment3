@@ -106,7 +106,7 @@ class User(Base):
 class AdminCity(Base):
     __tablename__ = 'cities'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    admin_id = Column(Integer, ForeignKey('admin.id'))
+    adminid = Column(Integer, ForeignKey('admin.id'))
     name = Column(String)
     url = Column(String)
 
@@ -127,8 +127,7 @@ class UserCity(Base):
     userId = Column(Integer, ForeignKey('users.id'))
     month = Column(String)
     year = Column(String)
-    weather_params = Column(String)
-
+    weather_params = Column(String) 
     def __repr__(self):
         return "<UserCity(userId='%s', cityId='%s')>" % (self.userId, self.cityId)
 
@@ -158,7 +157,22 @@ def add_admin():
     return admin.as_dict()
 
 
-@app.route("/admin/<id>")
+@app.route("/admin", methods=['GET'])
+def get_admins():
+    app.logger.info("Inside get_admins")
+    ret_obj = {}
+
+    am_session = DBSession()
+    admins = am_session.query(Admin)
+    admin_list = []
+    for admin in admins:
+        admin_list.append(admin.as_dict())
+
+    ret_obj['admins'] = admin_list
+    return ret_obj
+
+
+@app.route("/admin/<id>", methods=['GET'])
 def get_admin_by_id(id):
     app.logger.info("Inside get_admin_by_id %s\n", id)
 
@@ -190,22 +204,8 @@ def delete_admin_by_id(id):
         status = ("Admin with id {id} deleted.\n").format(id=id)
         return Response(status, status=200)
 
-@app.route("/admins")
-def get_admins():
-    app.logger.info("Inside get_admins")
-    ret_obj = {}
 
-    am_session = DBSession()
-    admins = am_session.query(Admin)
-    admin_list = []
-    for admin in admins:
-        admin_list.append(admin.as_dict())
-
-    ret_obj['admins'] = admin_list
-    return ret_obj
-
-
-##User REST API
+## User REST API
 @app.route("/users", methods=['POST'])
 def add_users():
     app.logger.info("Inside add_users")
@@ -228,7 +228,7 @@ def add_users():
     return user.as_dict()
 
 
-@app.route("/users")
+@app.route("/users", methods=['GET'])
 def get_users():
     app.logger.info("Inside get_users")
     ret_obj = {}
@@ -243,7 +243,7 @@ def get_users():
     return ret_obj
 
 
-@app.route("/users/<id>")
+@app.route("/users/<id>", methods=['GET'])
 def get_user_by_id(id):
     app.logger.info("Inside get_users_by_id %s\n", id)
 
@@ -292,14 +292,14 @@ def add_city_admin(id):
     name = data['name']
     url = data['url']
 
-    city = AdminCity(admin_id=id, name=name, url=url)
+    city = AdminCity(adminid=id, name=name, url=url)
     cs_session.add(city)
     cs_session.commit()
 
     return city.as_dict()
 
 
-@app.route("/admin/<id>/cities")
+@app.route("/admin/<id>/cities", methods=['GET'])
 def get_cities_admin(id):
     app.logger.info("Inside get_cities_admin")
 
@@ -309,7 +309,7 @@ def get_cities_admin(id):
     if admin is None:
         return Response("Admin with id {} not found".format(id), status=404)
 
-    cities = cs_session.query(AdminCity).filter_by(admin_id=id)
+    cities = cs_session.query(AdminCity).filter_by(adminid=id)
     city_list = []
     for city in cities:
         city_list.append(city.as_dict())
@@ -317,7 +317,7 @@ def get_cities_admin(id):
     return {'cities': city_list}
 
 
-@app.route("/admin/<id>/cities/<city_id>")
+@app.route("/admin/<id>/cities/<city_id>", methods=['GET'])
 def get_city_by_id_admin(id, city_id):
     app.logger.info("Inside get_city_by_id_admin, admin:%s city:%s\n", id, city_id)
 
@@ -370,20 +370,23 @@ def add_city_user(id):
     month = data['month']
     year = data['year']
     weather_params = data['weather_params']
-    
+
     if not str(year).isdigit() or len(str(year)) != 4:
         return Response("Year needs to be exactly four digits.", status=400)
+
     city = cs_session.query(AdminCity).filter_by(name=city_name).first()
     if city is None:
         return Response("City with name {} not found".format(city_name), status=404)
 
-    user_city = UserCity(cityId=city.id, userId=id, month=month, year=year, weather_params=weather_params)
+    user_city = UserCity(cityId=city.id, userId=id, month=month, year=str(year),
+                         weather_params=weather_params)
     cs_session.add(user_city)
     cs_session.commit()
 
     return user_city.as_dict()
 
-@app.route("/user/<id>/cities")
+
+@app.route("/users/<id>/cities", methods=['GET'])
 def get_cities_user(id):
     app.logger.info("Inside get_cities_user")
 
@@ -393,32 +396,34 @@ def get_cities_user(id):
     if user is None:
         return Response("User with id {} not found".format(id), status=404)
 
-    cities = cs_session.query(UserCity).filter_by(user_id=id)
-    city_list = []
-    for city in cities:
-        city_list.append(city.as_dict())
+    city_name = request.args.get('name')
 
-    return {'cities': city_list}
+    if city_name:
+        city = cs_session.query(AdminCity).filter_by(name=city_name).first()
+        if city is None:
+            return Response("City with name {} not found".format(city_name), status=404)
 
-    
-@app.route("/users/<id>/cities/<city_id>")
-def get_city_by_id_user(city_id):
-    app.logger.info("Inside get_city_by_id_user %s\n", city_id)
+        user_city = cs_session.query(UserCity).filter_by(userId=id, cityId=city.id).first()
+        if user_city is None:
+            return Response(
+                "City with name {} not being tracked by the user {}.".format(city_name, user.name),
+                status=404)
 
-    cs_session = DBSession()
-    city = cs_session.get(UserCity, city_id)
-    user = cs_session.get(User, id)
-    app.logger.info("Found city:%s\n", str(city))
-    if city == None:
-        status = ("City with id {city_id} not found\n").format(id=city_id)
-        return Response(status, status=404)
-    if user == None:
-        status = ("User with id {id} not found\n").format(id=id)
-        return Response(status, status=404)
+        return {
+            'name': city_name,
+            'month': user_city.month,
+            'year': user_city.year,
+            'weather_params': user_city.weather_params
+        }
     else:
-        return city.as_dict()
-        
-@app.route("/logout",methods=['GET'])
+        user_cities = cs_session.query(UserCity).filter_by(userId=id)
+        city_list = []
+        for uc in user_cities:
+            city_list.append(uc.as_dict())
+        return {'usercities': city_list}
+
+
+@app.route("/logout", methods=['GET'])
 def logout():
     app.logger.info("Logout called.")
     session.pop('username', None)
@@ -439,7 +444,7 @@ def login():
     if username in in_mem_user_cities:
         my_cities = in_mem_user_cities[username]
     return render_template('welcome.html',
-            welcome_message = "Personal Weather Portal",
+            welcome_message="Personal Weather Portal",
             cities=my_cities,
             name=username,
             addButton_style="display:none;",
@@ -454,6 +459,12 @@ def index():
     return render_template('index.html')
 
 
+# Admin login page served from /adminpage to avoid conflicting with GET /admin REST endpoint
+@app.route("/adminpage", methods=['GET'])
+def adminpage():
+    return render_template('adminindex.html')
+
+
 @app.route("/adminlogin", methods=['POST'])
 def adminlogin():
     username = request.form['username'].strip()
@@ -465,7 +476,7 @@ def adminlogin():
 
     user_cities = in_mem_cities
     return render_template('welcome.html',
-            welcome_message = "Personal Weather Portal - Admin Panel",
+            welcome_message="Personal Weather Portal - Admin Panel",
             cities=user_cities,
             name=username,
             addButton_style="display:inline;",
@@ -475,13 +486,8 @@ def adminlogin():
             status_style="display:none;")
 
 
-@app.route("/admin")
-def adminindex():
-    return render_template('adminindex.html')
-
-
 if __name__ == "__main__":
 
     app.debug = False
     app.logger.info('Portal started...')
-    app.run(host='0.0.0.0', port=5009) 
+    app.run(host='0.0.0.0', port=5009)
